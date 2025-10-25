@@ -1,0 +1,65 @@
+# Configuración de Git para Asesor PyME
+# Ignorar archivos sensibles y temporales
+
+# Variables de entorno
+env/
+venv
+.env
+.env.local
+.env.production
+
+# Dependencias
+node_modules/
+backend/venv/
+backend/__pycache__/
+backend/.pytest_cache/
+
+__pycache__
+# Archivos de datos
+data/
+*.xlsx
+*.csv
+*.pdf
+*.db
+
+# Logs
+*.log
+logs/
+
+# Archivos temporales
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build
+frontend/build/
+backend/dist/
+
+# Docker
+.dockerignore
+
+# Azure
+.azure/
+
+# Certificados SSL
+ssl/
+*.pem
+*.key
+*.crt
+
+
+#Pruebas de API
+simple_test.py
+test_server.py
+minimal_server.py
+debug_server.py
+
+working_server.py
+test_chat.json
