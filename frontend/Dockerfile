@@ -5,13 +5,13 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Copiar package.json y package-lock.json
-COPY frontend/package*.json ./
+COPY package*.json ./
 
-# Instalar dependencias
-RUN npm ci --only=production
+# Instalar dependencias (incluyendo devDependencies para build)
+RUN npm ci
 
 # Copiar código fuente
-COPY frontend/ .
+COPY . .
 
 # Construir aplicación
 RUN npm run build
