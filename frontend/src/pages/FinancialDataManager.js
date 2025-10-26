@@ -36,38 +36,33 @@ const FinancialDataManager = () => {
     notes: ''
   });
 
-  // Datos de ejemplo
+  // Cargar transacciones del backend
   useEffect(() => {
-    setTransactions([
-      {
-        id: 1,
-        description: 'Venta de productos',
-        amount: 15000,
-        type: 'income',
-        category: 'Ventas',
-        date: '2024-10-25',
-        notes: 'Venta mensual de productos'
-      },
-      {
-        id: 2,
-        description: 'Renta de oficina',
-        amount: 8000,
-        type: 'expense',
-        category: 'Gastos Operativos',
-        date: '2024-10-24',
-        notes: 'Renta mensual'
-      },
-      {
-        id: 3,
-        description: 'Servicios de internet',
-        amount: 1200,
-        type: 'expense',
-        category: 'Servicios',
-        date: '2024-10-23',
-        notes: 'Internet empresarial'
-      }
-    ]);
+    loadTransactions();
   }, []);
+
+  const loadTransactions = async () => {
+    setIsLoading(true);
+    try {
+      const response = await api.get('/api/transactions/?limit=10');
+      // Mapear datos del backend al formato del frontend
+      const mappedTransactions = response.data.map(t => ({
+        id: t.id || t.transaction_id,
+        description: t.description,
+        amount: t.amount,
+        type: t.transaction_type || t.type, // Mapear transaction_type a type
+        category: t.category,
+        date: t.date || t.transaction_date,
+        notes: t.notes || ''
+      }));
+      setTransactions(mappedTransactions);
+    } catch (error) {
+      console.error('Error cargando transacciones:', error);
+      toast.error('Error cargando transacciones');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filteredTransactions = transactions.filter(transaction => {
     const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -76,29 +71,52 @@ const FinancialDataManager = () => {
     return matchesSearch && matchesFilter;
   });
 
-  const handleAddTransaction = () => {
+  const handleAddTransaction = async () => {
     if (!newTransaction.description || !newTransaction.amount || !newTransaction.category) {
       toast.error('Por favor completa todos los campos obligatorios');
       return;
     }
 
-    const transaction = {
-      id: Date.now(),
-      ...newTransaction,
-      amount: parseFloat(newTransaction.amount)
-    };
+    setIsLoading(true);
+    try {
+      // Mapear a formato del backend
+      const categoryMapping = {
+        'Ventas': 'sales',
+        'Marketing': 'marketing',
+        'Personal': 'personnel',
+        'Equipo': 'equipment',
+        'Servicios': 'utilities',
+        'Gastos Operativos': 'operating_expenses',
+        'Otros': 'other'
+      };
 
-    setTransactions([...transactions, transaction]);
-    setNewTransaction({
-      description: '',
-      amount: '',
-      type: 'expense',
-      category: '',
-      date: new Date().toISOString().split('T')[0],
-      notes: ''
-    });
-    setShowAddForm(false);
-    toast.success('Transacción agregada exitosamente');
+      const transaction = {
+        date: newTransaction.date,
+        amount: parseFloat(newTransaction.amount),
+        description: newTransaction.description,
+        category: categoryMapping[newTransaction.category] || 'other',
+        transaction_type: newTransaction.type === 'income' ? 'income' : 'expense'
+      };
+
+      await api.post('/api/transactions/', transaction);
+      toast.success('Transacción agregada exitosamente');
+      setShowAddForm(false);
+      setNewTransaction({
+        description: '',
+        amount: '',
+        type: 'expense',
+        category: '',
+        date: new Date().toISOString().split('T')[0],
+        notes: ''
+      });
+      // Recargar transacciones
+      loadTransactions();
+    } catch (error) {
+      console.error('Error agregando transacción:', error);
+      toast.error('Error agregando transacción');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleEditTransaction = (transaction) => {

@@ -425,6 +425,46 @@ class SnowflakeService:
             logger.error(f"❌ Error registrando chat: {e}")
             return False
     
+    def insert_transaction(self, transaction_data: Dict[str, Any]) -> bool:
+        """Insertar una nueva transacción en Snowflake"""
+        if not self.connection:
+            return False
+        
+        try:
+            import uuid
+            cursor = self.connection.cursor()
+            
+            # Generar un transaction_id único
+            transaction_id = f"txn_{uuid.uuid4().hex[:12]}"
+            
+            cursor.execute("""
+                INSERT INTO transactions (
+                    transaction_id,
+                    pyme_id,
+                    transaction_date,
+                    amount,
+                    description,
+                    category,
+                    transaction_type
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, (
+                transaction_id,
+                transaction_data.get('pyme_id', 'E001'),
+                transaction_data.get('date'),
+                transaction_data.get('amount'),
+                transaction_data.get('description'),
+                transaction_data.get('category'),
+                transaction_data.get('transaction_type')
+            ))
+            
+            cursor.close()
+            logger.info(f"✅ Transacción {transaction_id} insertada en Snowflake")
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Error insertando transacción: {e}")
+            return False
+    
     def get_transactions(self, pyme_id: str = "empresa_001") -> List[Dict[str, Any]]:
         """Obtener todas las transacciones de una PyME"""
         if not self.connection:

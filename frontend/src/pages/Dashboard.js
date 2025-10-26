@@ -417,14 +417,14 @@ const Dashboard = () => {
               <Shield className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h3 className="text-xl font-semibold text-white font-display">Estado del Sistema</h3>
-              <p className="text-blue-100 text-sm">Todos los servicios funcionando correctamente</p>
+              <h3 className="text-xl font-semibold text-black font-display">Estado del Sistema</h3>
+              <p className="text-black text-sm">Todos los servicios funcionando correctamente</p>
             </div>
           </div>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <Zap className="h-4 w-4 text-white" />
-              <span className="text-white text-sm">Azure Arm</span>
+              <span className="text-black text-sm">Azure Arm</span>
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-banorte-success rounded-full animate-pulse"></div>

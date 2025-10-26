@@ -11,7 +11,7 @@ import os
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
 
-from app.api import analysis, simulations, chat
+from app.api import analysis, simulations, chat, transactions
 from app.services.data_service import DataService
 from app.services.gemini_service import GeminiService
 from app.models.financial_models import FinancialData, SimulationRequest, ChatMessage
@@ -74,6 +74,7 @@ app.add_middleware(
 app.include_router(analysis.router, prefix="/api/analysis", tags=["Análisis Financiero"])
 app.include_router(simulations.router, prefix="/api/simulations", tags=["Simulaciones"])
 app.include_router(chat.router, prefix="/api/chat", tags=["Chat Inteligente"])
+app.include_router(transactions.router, prefix="/api/transactions", tags=["Transacciones"])
 
 @app.get("/")
 async def root():
