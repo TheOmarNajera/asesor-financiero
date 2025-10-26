@@ -18,23 +18,24 @@ Presentamos el Asesor PyME Inteligente: una solución que combina IA avanzada co
 experiencia bancaria profesional para transformar la gestión financiera empresarial."
 ```
 
-### **2. Demo del Asesor Virtual Carlos Mendoza (2 minutos)**
+### **2. Demo del Asesor Virtual Maya (2 minutos)**
 ```
 🎬 ESCENA: Login empresarial y acceso al chat
 🎤 NARRACIÓN: 
-"Conozcan a Carlos Mendoza, nuestro Asesor Financiero Senior de Banorte con más de 15 años de experiencia."
+"Conozcan a Maya, nuestra Asesora Financiera de Banorte con experiencia en gestión empresarial."
 
 🎬 ACCIONES A MOSTRAR:
-✅ Login empresarial (empresa@demo.com)
-✅ Mensaje de bienvenida profesional
+✅ Login empresarial por empresa_id (E001)
+✅ Mensaje de bienvenida profesional de Maya
+✅ Reproducción de audio con ElevenLabs (opcional)
 ✅ Pregunta: "¿Cómo puedo mejorar mi flujo de caja mensual?"
-✅ Respuesta detallada con análisis específico
+✅ Respuesta concisa y directa con análisis específico
 ✅ Recomendaciones de productos Banorte
 ✅ Pregunta de seguimiento profesional
 
 🎤 NARRACIÓN:
-"Carlos analiza datos reales, proporciona recomendaciones específicas y sugiere 
-productos bancarios relevantes, todo con la personalidad de un verdadero asesor financiero."
+"Maya analiza datos reales, proporciona recomendaciones específicas y sugiere 
+productos bancarios relevantes, todo con la personalidad conversacional de un verdadero asesor financiero."
 ```
 
 ### **3. Simulaciones What-If (1 minuto)**

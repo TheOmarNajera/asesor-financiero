@@ -40,22 +40,35 @@ code .env
 ```
 
 **Variables requeridas en `.env`:**
+
+Configurar en el archivo `backend/.env`:
+
 ```env
+# Configuración del Servidor
+HOST=0.0.0.0
+PORT=8000
+DEBUG=False
+
+# Empresa por Defecto
+DEFAULT_EMPRESA_ID=E001
+
+# Configuración de Datos
+USE_SAMPLE_DATA=true
+SKIP_EXCEL_LOADING=true
+
+# Snowflake Data Cloud
+SNOWFLAKE_ACCOUNT=tu_account.snowflakecomputing.com
+SNOWFLAKE_USER=tu_usuario
+SNOWFLAKE_PASSWORD=tu_password
+SNOWFLAKE_WAREHOUSE=COMPUTE_WH
+SNOWFLAKE_DATABASE=PYME_FINANCIAL
+SNOWFLAKE_SCHEMA=PUBLIC
+
 # Google Gemini API
-GEMINI_API_KEY=tu_api_key_aqui
+GEMINI_API_KEY=tu_api_key_de_gemini
 
-# Configuración del servidor
-SERVER_HOST=127.0.0.1
-SERVER_PORT=8000
-DEBUG=True
-
-# Base de datos
-DATABASE_URL=sqlite:///asesor_pyme.db
-
-# Configuración de Azure (opcional)
-AZURE_RESOURCE_GROUP=asesor-pyme-rg
-AZURE_VM_NAME=asesor-pyme-vm
-AZURE_LOCATION=eastus
+# ElevenLabs Voice Synthesis
+ELEVENLABS_API_KEY=tu_api_key_de_elevenlabs
 ```
 
 ### **Paso 3: Instalar Dependencias del Backend**

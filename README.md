@@ -21,7 +21,7 @@
 - ✅ **Best Use of Snowflake API**: Análisis financiero avanzado en la nube
 - ✅ **Best Use of ElevenLabs**: Síntesis de voz para chat interactivo
 - ✅ **Best Use of Arm**: Azure VM con arquitectura Arm
-- 🎯 **Best .Tech Domain**: `asesorpyme.tech` (recomendado)
+- 🎯 **Best .Tech Domain**: `poweredbymaya.tech`
 
 ## 🏗️ Arquitectura del Sistema
 
@@ -50,19 +50,19 @@
 
 ## 🚀 Características Principales
 
-### 👨‍💼 Asesor Financiero Virtual Profesional
-- **Carlos Mendoza**: Asesor Financiero Senior de Banorte con 15+ años de experiencia
-- **Personalidad profesional**: Tono cercano pero experto, como consultor de confianza
+### 👩‍💼 Asesor Financiero Virtual Profesional
+- **Maya**: Asesora Financiera de Banorte con experiencia en gestión empresarial
+- **Personalidad profesional**: Tono conversacional y directo, como consultor de confianza
 - **Enfoque empresarial**: Siempre orientado al crecimiento sostenible de PyMEs
 - **Productos Banorte**: Recomendaciones específicas de créditos, inversiones y seguros
 - **Análisis profundo**: Respuestas basadas en datos concretos y métricas clave
 
 ### 🎤 Chat con Síntesis de Voz (ElevenLabs)
-- **Voz natural**: Síntesis de voz profesional para Carlos Mendoza
+- **Voz natural**: Síntesis de voz profesional para Maya
 - **Audio interactivo**: Reproducción de respuestas del asesor
 - **Control de audio**: Botones de play/pause en cada mensaje
 - **Accesibilidad**: Experiencia inclusiva para usuarios con discapacidades
-- **Múltiples voces**: Configuración de diferentes tonos profesionales
+- **Optimización de créditos**: Texto truncado a 500 caracteres para eficiencia
 
 ### 💬 Chat Inteligente Empresarial
 - Preguntas en lenguaje natural: *"¿Cómo puedo mejorar mi flujo de caja mensual?"*
@@ -91,10 +91,12 @@
 - Alertas proactivas sobre riesgos financieros
 
 ### 🏢 Gestión Empresarial Completa
-- **Autenticación empresarial**: Login seguro para PyMEs
-- **Gestión de datos**: CRUD completo de transacciones financieras
+- **Autenticación empresarial**: Login por empresa_id para PyMEs
+- **Gestión de transacciones**: CRUD completo con datos reales en Snowflake
+- **Filtrado por empresa**: Datos específicos por empresa_id
 - **Panel administrativo**: Control de accesos y gestión de usuarios
 - **Seguridad JWT**: Tokens seguros para ambas interfaces
+- **Persistencia en Snowflake**: Todas las transacciones se guardan en la nube
 
 ## 🛠️ Stack Tecnológico
 
@@ -255,11 +257,11 @@ chmod +x azure/deploy.sh
 - `GET /api/simulations/history` - Historial de simulaciones
 - `GET /api/simulations/{id}` - Obtener simulación específica
 
-### Gestión de Datos
-- `GET /api/data/transactions` - Listar transacciones
-- `POST /api/data/transactions` - Crear transacción
-- `PUT /api/data/transactions/{id}` - Actualizar transacción
-- `DELETE /api/data/transactions/{id}` - Eliminar transacción
+### Gestión de Transacciones
+- `GET /api/transactions/` - Listar últimas transacciones (filtrar por empresa)
+- `POST /api/transactions/` - Crear nueva transacción en Snowflake
+- `DELETE /api/transactions/{id}` - Eliminar transacción
+- **Header requerido**: `X-Empresa-ID` para filtrar datos por empresa
 
 ### Snowflake Integration
 - `GET /api/snowflake/analysis` - Análisis avanzado con Snowflake
@@ -291,7 +293,7 @@ chmod +x azure/deploy.sh
 - ✅ **Best Use of Snowflake API**: Análisis financiero avanzado en la nube
 - ✅ **Best Use of ElevenLabs**: Síntesis de voz para chat interactivo
 - ✅ **Best Use of Arm**: Azure VM con arquitectura Arm
-- 🎯 **Best .Tech Domain**: `asesorpyme.tech` (recomendado)
+- 🎯 **Best .Tech Domain**: `poweredbymaya.tech`
 
 ### Criterios de Evaluación
 - ✅ **Funcionalidad**: Sistema completo y operativo
@@ -350,7 +352,7 @@ Como equipo *Migajeros*, nos comprometemos a continuar desarrollando tecnología
 **🏦 Asesor PyME Inteligente** - *Transformando la asesoría financiera con IA, voz y cloud*
 
 ### 🌐 Dominio Recomendado
-**`asesorpyme.tech`** - Plataforma profesional para PyMEs
+**`poweredbymaya.tech`** - Plataforma profesional para PyMEs
 
 ### 📚 Documentación Adicional
 - [SNOWFLAKE_INTEGRATION.md](SNOWFLAKE_INTEGRATION.md) - Guía completa de integración con Snowflake
