@@ -49,7 +49,7 @@ jobs:
       id: check-vm
       run: |
         VM_EXISTS=$(az vm list --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-          --query "[?name=='${{ env.AZURE_VM_NAME }}']" -o tsv || echo "")
+          --query "[?name=='${{ env.AZURE_VM_NAME }}'].name" -o tsv)
         if [ -z "$VM_EXISTS" ]; then
           echo "exists=false" >> $GITHUB_OUTPUT
         else
@@ -60,16 +60,27 @@ jobs:
       if: steps.check-vm.outputs.exists == 'false'
       run: |
         echo "Creating new VM with Arm architecture..."
+        
+        # Generate SSH key pair for the VM
+        ssh-keygen -t rsa -b 4096 -f ~/.ssh/vm_key -N ""
+        
+        # Get the public key
+        PUBLIC_KEY=$(cat ~/.ssh/vm_key.pub)
+        
         az vm create \
           --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
           --name ${{ env.AZURE_VM_NAME }} \
           --image "Ubuntu2204" \
           --size ${{ env.AZURE_VM_SIZE }} \
           --admin-username ${{ env.AZURE_ADMIN_USERNAME }} \
-          --generate-ssh-keys \
+          --ssh-key-value "$PUBLIC_KEY" \
           --public-ip-sku Standard \
           --location ${{ env.AZURE_LOCATION }} \
           --output table
+        
+        # Store the private key for later use
+        echo "$(cat ~/.ssh/vm_key)" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
         
         # Open required ports
         az vm open-port --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
@@ -93,39 +104,23 @@ jobs:
     - name: Setup SSH Key
       run: |
         mkdir -p ~/.ssh
-        echo "${{ secrets.AZURE_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 700 ~/.ssh
+        
+        # If VM was just created, use the generated key
+        if [ ! -f ~/.ssh/id_rsa ]; then
+          echo "${{ secrets.AZURE_SSH_KEY }}" > ~/.ssh/id_rsa
+        fi
+        
         chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan ${{ steps.vm-ip.outputs.IP }} >> ~/.ssh/known_hosts
+        ssh-keyscan ${{ steps.vm-ip.outputs.IP }} >> ~/.ssh/known_hosts 2>/dev/null
     
     - name: Install dependencies on VM
       run: |
-        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
-          ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} << 'EOF'
-        # Update system
-        sudo apt-get update && sudo apt-get upgrade -y
-        
-        # Install Docker if not installed
-        if ! command -v docker &> /dev/null; then
-          curl -fsSL https://get.docker.com -o get-docker.sh
-          sudo sh get-docker.sh
-          sudo usermod -aG docker $USER
-          rm get-docker.sh
-        fi
-        
-        # Install Docker Compose if not installed
-        if ! command -v docker-compose &> /dev/null; then
-          sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" \
-            -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-        fi
-        
-        # Install Git if not installed
-        if ! command -v git &> /dev/null; then
-          sudo apt-get install -y git
-        fi
-        
-        echo "✅ Dependencies installed"
-EOF
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} "sudo apt-get update && sudo apt-get upgrade -y"
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} "command -v docker &> /dev/null || (curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh && sudo usermod -aG docker $USER && rm get-docker.sh)"
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} 'command -v docker-compose &> /dev/null || (sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && sudo chmod +x /usr/local/bin/docker-compose)'
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} "sudo apt-get install -y git openssl"
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} 'echo "✅ Dependencies installed"'
     
     - name: Deploy application to VM
       run: |
@@ -136,25 +131,29 @@ EOF
     
     - name: Create .env file on VM
       run: |
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} "cd ~/asesor-pyme && echo 'HOST=0.0.0.0' > .env"
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} "cd ~/asesor-pyme && echo 'PORT=8000' >> .env"
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} "cd ~/asesor-pyme && echo 'DEBUG=False' >> .env"
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} "cd ~/asesor-pyme && echo 'DEFAULT_EMPRESA_ID=E001' >> .env"
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} "cd ~/asesor-pyme && echo 'USE_SAMPLE_DATA=true' >> .env"
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} "cd ~/asesor-pyme && echo 'SKIP_EXCEL_LOADING=true' >> .env"
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} "cd ~/asesor-pyme && echo 'SNOWFLAKE_ACCOUNT=${{ secrets.SNOWFLAKE_ACCOUNT }}' >> .env"
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} "cd ~/asesor-pyme && echo 'SNOWFLAKE_USER=${{ secrets.SNOWFLAKE_USER }}' >> .env"
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} "cd ~/asesor-pyme && echo 'SNOWFLAKE_PASSWORD=${{ secrets.SNOWFLAKE_PASSWORD }}' >> .env"
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} "cd ~/asesor-pyme && echo 'SNOWFLAKE_WAREHOUSE=COMPUTE_WH' >> .env"
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} "cd ~/asesor-pyme && echo 'SNOWFLAKE_DATABASE=PYME_FINANCIAL' >> .env"
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} "cd ~/asesor-pyme && echo 'SNOWFLAKE_SCHEMA=PUBLIC' >> .env"
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} "cd ~/asesor-pyme && echo 'GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}' >> .env"
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} "cd ~/asesor-pyme && echo 'ELEVENLABS_API_KEY=${{ secrets.ELEVENLABS_API_KEY }}' >> .env"
+    
+    - name: Create SSL certificates
+      run: |
         ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
           ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} \
-          "cd ~/asesor-pyme && cat > .env <<'ENDFILE'
-        HOST=0.0.0.0
-        PORT=8000
-        DEBUG=False
-        DEFAULT_EMPRESA_ID=E001
-        USE_SAMPLE_DATA=true
-        SKIP_EXCEL_LOADING=true
-        SNOWFLAKE_ACCOUNT=${{ secrets.SNOWFLAKE_ACCOUNT }}
-        SNOWFLAKE_USER=${{ secrets.SNOWFLAKE_USER }}
-        SNOWFLAKE_PASSWORD=${{ secrets.SNOWFLAKE_PASSWORD }}
-        SNOWFLAKE_WAREHOUSE=COMPUTE_WH
-        SNOWFLAKE_DATABASE=PYME_FINANCIAL
-        SNOWFLAKE_SCHEMA=PUBLIC
-        GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-        ELEVENLABS_API_KEY=${{ secrets.ELEVENLABS_API_KEY }}
-ENDFILE
-        "
+          "cd ~/asesor-pyme && mkdir -p ssl && \
+           openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+           -keyout ssl/key.pem -out ssl/cert.pem \
+           -subj '/CN=localhost'"
     
     - name: Deploy with Docker Compose
       run: |
@@ -173,10 +172,11 @@ ENDFILE
     - name: Health Check
       run: |
         echo "🌐 Application URL: http://${{ steps.vm-ip.outputs.IP }}"
-        echo "📊 API URL: http://${{ steps.vm-ip.outputs.IP }}/api"
+        echo "🌐 Application URL (HTTPS): https://${{ steps.vm-ip.outputs.IP }}"
+        echo "📊 API URL: https://${{ steps.vm-ip.outputs.IP }}/api"
         
-        # Simple health check
-        curl -f http://${{ steps.vm-ip.outputs.IP }}/health || echo "⚠️ Health check failed, but deployment may still be in progress"
+        # Simple health check with SSL
+        curl -k -f https://${{ steps.vm-ip.outputs.IP }}/health || echo "⚠️ Health check failed, but deployment may still be in progress"
     
     - name: Deployment Summary
       if: always()
@@ -186,5 +186,6 @@ ENDFILE
         echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
         echo "- **VM IP**: ${{ steps.vm-ip.outputs.IP }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Architecture**: Arm (${{ env.AZURE_VM_SIZE }})" >> $GITHUB_STEP_SUMMARY
-        echo "- **Application**: http://${{ steps.vm-ip.outputs.IP }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Application (HTTP)**: http://${{ steps.vm-ip.outputs.IP }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Application (HTTPS)**: https://${{ steps.vm-ip.outputs.IP }}" >> $GITHUB_STEP_SUMMARY
 
