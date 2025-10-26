@@ -129,41 +129,35 @@ EOF
     
     - name: Deploy application to VM
       run: |
-        # Create app directory
+        # Create app directory and clone
         ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
           ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} \
           "mkdir -p ~/asesor-pyme && cd ~/asesor-pyme && git clone https://github.com/${{ github.repository }} . || git pull"
-        
-        # Copy environment variables
+    
+    - name: Create .env file on VM
+      run: |
         ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
-          ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} <<'HEREDOC'
-        cd ~/asesor-pyme
-        
-        # Create .env file if it doesn't exist
-        if [ ! -f .env ]; then
-          cp env.example .env
-        fi
-        
-        # Update .env with GitHub Secrets
-        cat > .env <<ENVEOF
-HOST=0.0.0.0
-PORT=8000
-DEBUG=False
-DEFAULT_EMPRESA_ID=E001
-USE_SAMPLE_DATA=true
-SKIP_EXCEL_LOADING=true
-SNOWFLAKE_ACCOUNT=${{ secrets.SNOWFLAKE_ACCOUNT }}
-SNOWFLAKE_USER=${{ secrets.SNOWFLAKE_USER }}
-SNOWFLAKE_PASSWORD=${{ secrets.SNOWFLAKE_PASSWORD }}
-SNOWFLAKE_WAREHOUSE=COMPUTE_WH
-SNOWFLAKE_DATABASE=PYME_FINANCIAL
-SNOWFLAKE_SCHEMA=PUBLIC
-GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-ELEVENLABS_API_KEY=${{ secrets.ELEVENLABS_API_KEY }}
-ENVEOF
-HEREDOC
-        
-        # Deploy with Docker Compose
+          ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} \
+          "cd ~/asesor-pyme && cat > .env <<'ENDFILE'
+        HOST=0.0.0.0
+        PORT=8000
+        DEBUG=False
+        DEFAULT_EMPRESA_ID=E001
+        USE_SAMPLE_DATA=true
+        SKIP_EXCEL_LOADING=true
+        SNOWFLAKE_ACCOUNT=${{ secrets.SNOWFLAKE_ACCOUNT }}
+        SNOWFLAKE_USER=${{ secrets.SNOWFLAKE_USER }}
+        SNOWFLAKE_PASSWORD=${{ secrets.SNOWFLAKE_PASSWORD }}
+        SNOWFLAKE_WAREHOUSE=COMPUTE_WH
+        SNOWFLAKE_DATABASE=PYME_FINANCIAL
+        SNOWFLAKE_SCHEMA=PUBLIC
+        GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+        ELEVENLABS_API_KEY=${{ secrets.ELEVENLABS_API_KEY }}
+ENDFILE
+        "
+    
+    - name: Deploy with Docker Compose
+      run: |
         ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
           ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} \
           "cd ~/asesor-pyme && docker-compose down && docker-compose build && docker-compose up -d"
