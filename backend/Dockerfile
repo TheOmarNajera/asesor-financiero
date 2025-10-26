@@ -15,7 +15,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copiar código de la aplicación
-COPY app ./app
+COPY . .
 
 # Crear directorio para datos
 RUN mkdir -p /app/data
