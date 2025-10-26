@@ -2,7 +2,7 @@
 
 ## 📋 Descripción del Proyecto
 
-**Asesor PyME Inteligente** es una solución financiera innovadora que utiliza Model Context Protocol (MCP) para proporcionar análisis financiero inteligente y recomendaciones proactivas a pequeñas y medianas empresas. La solución incluye un asesor financiero virtual con personalidad profesional de Banorte y está desplegada en Azure usando arquitectura Arm para máxima eficiencia energética.
+**Asesor PyME Inteligente** es una solución financiera innovadora que utiliza Model Context Protocol (MCP) para proporcionar análisis financiero inteligente y recomendaciones proactivas a pequeñas y medianas empresas. La solución incluye un asesor financiero virtual con personalidad profesional de Banorte, síntesis de voz con ElevenLabs, análisis avanzado con Snowflake Data Cloud, y está desplegada en Azure usando arquitectura Arm para máxima eficiencia energética.
 
 ### 🎯 Objetivos del Reto Banorte
 
@@ -15,28 +15,36 @@
 - ✅ Gestión completa de datos financieros (CRUD)
 - ✅ Desplegar en Azure con arquitectura Arm (premio MLH)
 
+### 🏆 Categorías MLH Competidas
+
+- ✅ **Best Use of Gemini API**: Chat inteligente con Carlos Mendoza
+- ✅ **Best Use of Snowflake API**: Análisis financiero avanzado en la nube
+- ✅ **Best Use of ElevenLabs**: Síntesis de voz para chat interactivo
+- ✅ **Best Use of Arm**: Azure VM con arquitectura Arm
+- 🎯 **Best .Tech Domain**: `asesorpyme.tech` (recomendado)
+
 ## 🏗️ Arquitectura del Sistema
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Frontend      │    │   Azure VM       │    │   Google        │
-│   (React)       │◄──►│   (Arm-based)    │◄──►│   Gemini API    │
+│   Frontend      │◄──►│   Azure VM       │◄──►│   Snowflake     │
+│   (React)       │    │   (Arm-based)    │    │   Data Cloud   │
 │                 │    │                  │    │                 │
-│ • Dashboard     │    │ • MCP Server     │    │ • NLP           │
-│ • Chat Asesor   │    │ • FastAPI        │    │ • Analysis      │
-│ • Simulaciones  │    │ • Data Analysis  │    │ • Recommendations│
-│ • Gestión Datos │    │ • Auth System    │    │ • Professional   │
-│ • Admin Panel   │    │ • JWT Security   │    │   Personality   │
+│ • Dashboard     │    │ • MCP Server     │    │ • Data Warehouse│
+│ • Chat Asesor   │    │ • FastAPI        │    │ • Data Lake     │
+│ • Simulaciones  │    │ • Data Analysis  │    │ • ML Functions  │
+│ • Gestión Datos │    │ • Auth System    │    │ • Analytics     │
+│ • Admin Panel   │    │ • JWT Security   │    │ • Scalability   │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
                                 │
                                 ▼
                        ┌─────────────────┐
-                       │   Data Sources  │
+                       │   AI Services   │
                        │                 │
-                       │ • Excel Files   │
-                       │ • SQLite DB     │
-                       │ • User Data     │
-                       │ • Transactions  │
+                       │ • Gemini API    │
+                       │ • ElevenLabs    │
+                       │ • Voice Synthesis│
+                       │ • NLP Analysis  │
                        └─────────────────┘
 ```
 
@@ -48,6 +56,13 @@
 - **Enfoque empresarial**: Siempre orientado al crecimiento sostenible de PyMEs
 - **Productos Banorte**: Recomendaciones específicas de créditos, inversiones y seguros
 - **Análisis profundo**: Respuestas basadas en datos concretos y métricas clave
+
+### 🎤 Chat con Síntesis de Voz (ElevenLabs)
+- **Voz natural**: Síntesis de voz profesional para Carlos Mendoza
+- **Audio interactivo**: Reproducción de respuestas del asesor
+- **Control de audio**: Botones de play/pause en cada mensaje
+- **Accesibilidad**: Experiencia inclusiva para usuarios con discapacidades
+- **Múltiples voces**: Configuración de diferentes tonos profesionales
 
 ### 💬 Chat Inteligente Empresarial
 - Preguntas en lenguaje natural: *"¿Cómo puedo mejorar mi flujo de caja mensual?"*
@@ -61,6 +76,13 @@
 - Análisis de impacto en flujo de caja
 - Visualizaciones interactivas de tendencias
 - Evaluación de riesgos y oportunidades
+
+### 🏔️ Análisis Avanzado con Snowflake
+- **Data Cloud**: Escalabilidad masiva para múltiples PyMEs
+- **Análisis histórico**: Tendencias de 12+ meses
+- **Simulaciones complejas**: Escenarios con datos reales
+- **Métricas avanzadas**: Volatilidad, crecimiento, ROI
+- **SQL nativo**: Consultas optimizadas para análisis profundo
 
 ### 🔍 Análisis Inteligente
 - Detección automática de patrones en gastos
@@ -79,8 +101,10 @@
 ### Backend
 - **FastAPI**: Framework web moderno y rápido
 - **Google Gemini**: IA conversacional y análisis
+- **Snowflake**: Data Cloud para análisis avanzado
+- **ElevenLabs**: Síntesis de voz profesional
 - **Pandas & Scikit-learn**: Análisis de datos y ML
-- **SQLite**: Base de datos local
+- **SQLite**: Base de datos local (fallback)
 - **JWT**: Autenticación segura
 - **Pydantic**: Validación de datos
 
@@ -91,9 +115,11 @@
 - **Chart.js**: Visualizaciones financieras
 - **Axios**: Comunicación con API
 - **React Router**: Navegación SPA
+- **Lucide React**: Iconografía moderna
 
 ### Infraestructura
 - **Azure VM**: Servidor con procesador Arm
+- **Snowflake Data Cloud**: Escalabilidad masiva
 - **Docker**: Containerización
 - **Nginx**: Proxy reverso
 - **SSL/TLS**: Seguridad de comunicaciones
@@ -157,12 +183,18 @@
 - Node.js 16+
 - Docker (opcional)
 - Cuenta Azure (para despliegue)
+- Cuenta Snowflake (trial gratuito)
+- API Key ElevenLabs
 
 ### Instalación Local
 ```bash
 # Clonar repositorio
 git clone <repository-url>
 cd asesor-financiero
+
+# Configurar variables de entorno
+cp env.example .env
+# Editar .env con tus API keys
 
 # Backend
 cd backend
@@ -173,6 +205,27 @@ python -m uvicorn app.main:app --reload
 cd frontend
 npm install
 npm start
+```
+
+### Configuración de Servicios
+
+#### Snowflake
+```bash
+# Crear cuenta trial en Snowflake
+# Configurar variables en .env:
+SNOWFLAKE_ACCOUNT=your_account.snowflakecomputing.com
+SNOWFLAKE_USER=your_username
+SNOWFLAKE_PASSWORD=your_password
+
+# Migrar datos
+python migrate_to_snowflake.py
+```
+
+#### ElevenLabs
+```bash
+# Obtener API key de ElevenLabs
+# Configurar en .env:
+ELEVENLABS_API_KEY=your_api_key
 ```
 
 ### Despliegue en Azure
@@ -192,7 +245,9 @@ chmod +x azure/deploy.sh
 
 ### Chat Inteligente
 - `POST /api/chat/message` - Enviar mensaje al asesor
+- `POST /api/chat/audio` - Generar respuesta de audio
 - `GET /api/chat/suggestions` - Obtener sugerencias de preguntas
+- `GET /api/chat/voices` - Obtener voces disponibles
 - `GET /api/chat/history` - Historial de conversación
 
 ### Simulaciones
@@ -206,28 +261,41 @@ chmod +x azure/deploy.sh
 - `PUT /api/data/transactions/{id}` - Actualizar transacción
 - `DELETE /api/data/transactions/{id}` - Eliminar transacción
 
+### Snowflake Integration
+- `GET /api/snowflake/analysis` - Análisis avanzado con Snowflake
+- `POST /api/snowflake/simulation` - Simulación con datos históricos
+- `GET /api/snowflake/metrics` - Métricas calculadas automáticamente
+
 ## 🎥 Demo Video
 
 **Duración**: 5 minutos
 **Estructura sugerida**:
-1. **Introducción** (30s): Problema y solución
-2. **Demo del Asesor** (2m): Chat con Carlos Mendoza
-3. **Simulaciones** (1m): Escenarios What-If
-4. **Dashboard** (1m): Métricas y análisis
-5. **Gestión de Datos** (30s): CRUD de transacciones
-6. **Panel Admin** (30s): Control de accesos
-7. **Conclusión** (30s): Beneficios y próximos pasos
+1. **Introducción** (30s): Problema y solución innovadora
+2. **Demo del Asesor con Audio** (2m): Chat con Carlos Mendoza + síntesis de voz
+3. **Análisis con Snowflake** (1m): Tendencias históricas y métricas avanzadas
+4. **Simulaciones** (1m): Escenarios What-If con datos reales
+5. **Dashboard** (30s): Métricas en tiempo real
+6. **Gestión de Datos** (30s): CRUD de transacciones
+7. **Panel Admin** (30s): Control de accesos
+8. **Conclusión** (30s): Beneficios y próximos pasos
 
 ## 🏆 Premios y Reconocimientos
 
 ### Hack Mty 2025
 - **Reto Banorte**: Solución financiera innovadora
 - **Premio MLH Arm**: Arquitectura eficiente energéticamente
-- **Innovación**: MCP + IA conversacional profesional
+- **Innovación**: MCP + IA conversacional profesional + Audio + Cloud
+
+### Categorías MLH Competidas
+- ✅ **Best Use of Gemini API**: Chat inteligente con personalidad profesional
+- ✅ **Best Use of Snowflake API**: Análisis financiero avanzado en la nube
+- ✅ **Best Use of ElevenLabs**: Síntesis de voz para chat interactivo
+- ✅ **Best Use of Arm**: Azure VM con arquitectura Arm
+- 🎯 **Best .Tech Domain**: `asesorpyme.tech` (recomendado)
 
 ### Criterios de Evaluación
 - ✅ **Funcionalidad**: Sistema completo y operativo
-- ✅ **Innovación**: Asesor virtual con personalidad profesional
+- ✅ **Innovación**: Asesor virtual con personalidad + audio + cloud
 - ✅ **Impacto**: Solución real para PyMEs
 - ✅ **Técnica**: Arquitectura moderna y escalable
 - ✅ **Presentación**: Demo profesional y documentación completa
@@ -279,4 +347,13 @@ Como equipo *Migajeros*, nos comprometemos a continuar desarrollando tecnología
 
 ---
 
-**🏦 Asesor PyME Inteligente** - *Transformando la asesoría financiera con IA*
+**🏦 Asesor PyME Inteligente** - *Transformando la asesoría financiera con IA, voz y cloud*
+
+### 🌐 Dominio Recomendado
+**`asesorpyme.tech`** - Plataforma profesional para PyMEs
+
+### 📚 Documentación Adicional
+- [SNOWFLAKE_INTEGRATION.md](SNOWFLAKE_INTEGRATION.md) - Guía completa de integración con Snowflake
+- [DOMAIN_STRATEGY.md](DOMAIN_STRATEGY.md) - Estrategia de dominio .tech
+- [DEMO.md](DEMO.md) - Guía de demostración
+- [INSTALLATION.md](INSTALLATION.md) - Instrucciones detalladas de instalación

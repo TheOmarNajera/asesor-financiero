@@ -2,8 +2,8 @@
 Endpoints para simulaciones financieras What-If
 """
 
-from fastapi import APIRouter, HTTPException, Depends
-from typing import Dict, Any, List
+from fastapi import APIRouter, HTTPException, Depends, Header
+from typing import Dict, Any, List, Optional
 import logging
 from datetime import datetime, timedelta
 
@@ -14,8 +14,10 @@ from app.services.gemini_service import GeminiService
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-def get_data_service() -> DataService:
-    return DataService()
+def get_data_service(empresa_id: Optional[str] = Header(None, alias="X-Empresa-ID")) -> DataService:
+    """Dependency para obtener el servicio de datos con empresa_id del header"""
+    empresa = empresa_id or "E001"
+    return DataService(empresa_id=empresa)
 
 def get_gemini_service() -> GeminiService:
     return GeminiService()
@@ -36,7 +38,7 @@ async def create_simulation(
         }
         
         # Ejecutar simulación
-        simulation_data = await _run_simulation(request.scenario, base_data, request.duration_months)
+        simulation_data = await _run_simulation(request.scenario, base_data, request.scenario.duration_months)
         
         # Generar análisis con IA
         analysis = await gemini_service.generate_simulation_analysis(request.scenario.dict(), base_data)

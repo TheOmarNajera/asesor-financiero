@@ -23,6 +23,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "start:network": "set HOST=0.0.0.0&&set REACT_APP_API_URL=http://172.20.10.10:8000&&react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -50,5 +51,5 @@
     "@types/react-dom": "^18.0.11",
     "typescript": "^4.9.5"
   },
-  "proxy": "http://localhost:8000"
+  "proxy": "http://172.20.10.10:8000"
 }

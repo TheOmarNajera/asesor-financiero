@@ -16,8 +16,8 @@ from app.services.data_service import DataService
 from app.services.gemini_service import GeminiService
 from app.models.financial_models import FinancialData, SimulationRequest, ChatMessage
 
-# Cargar variables de entorno
-load_dotenv()
+# Cargar variables de entorno (busca en el directorio actual primero)
+load_dotenv()  # Busca .env en el directorio actual (backend)
 
 # Servicios globales
 data_service = None
@@ -64,7 +64,7 @@ app = FastAPI(
 # Configurar CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:8080"],
+    allow_origins=["http://localhost:3000", "http://localhost:8080", "http://172.20.10.10:3000", "http://172.20.10.10"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

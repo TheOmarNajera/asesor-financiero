@@ -225,7 +225,7 @@ const Dashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-financial-income mb-1">Ingresos Totales</p>
-              <p className="text-3xl font-bold text-financial-income">
+              <p className="text-xl font-bold text-financial-income">
                 {formatCurrency(metrics?.total_revenue || 0)}
               </p>
             </div>
@@ -244,7 +244,7 @@ const Dashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-financial-expense mb-1">Gastos Totales</p>
-              <p className="text-3xl font-bold text-financial-expense">
+              <p className="text-xl font-bold text-financial-expense">
                 {formatCurrency(metrics?.total_expenses || 0)}
               </p>
             </div>
@@ -263,7 +263,7 @@ const Dashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-financial-profit mb-1">Ganancia Neta</p>
-              <p className="text-3xl font-bold text-financial-profit">
+              <p className="text-xl font-bold text-financial-profit">
                 {formatCurrency(metrics?.net_profit || 0)}
               </p>
             </div>
@@ -282,7 +282,7 @@ const Dashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-banorte-primary mb-1">Margen de Ganancia</p>
-              <p className="text-3xl font-bold text-banorte-primary">
+              <p className="text-xl font-bold text-banorte-primary">
                 {formatPercentage(metrics?.profit_margin || 0)}
               </p>
             </div>

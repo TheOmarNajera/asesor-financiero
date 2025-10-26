@@ -81,11 +81,12 @@ class ChatMessage(BaseModel):
 
 class ChatResponse(BaseModel):
     """Respuesta del chat"""
-    response: str
+    content: str = Field(..., description="Contenido de la respuesta")
     analysis: Optional[Dict[str, Any]] = None
     recommendations: Optional[List[str]] = None
     visualizations: Optional[List[str]] = None
     confidence: float = Field(..., ge=0, le=1)
+    audio_data: Optional[Dict[str, Any]] = Field(None, description="Datos de audio generados por ElevenLabs")
 
 class FinancialData(BaseModel):
     """Datos financieros completos"""

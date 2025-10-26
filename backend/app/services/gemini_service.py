@@ -3,7 +3,12 @@ Servicio de Google Gemini para procesamiento de lenguaje natural
 y generación de análisis financiero inteligente
 """
 
-import google.generativeai as genai
+try:
+    import google.generativeai as genai
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+    print("⚠️ google-generativeai no disponible, usando respuestas simuladas")
 import os
 import json
 import logging
@@ -11,20 +16,50 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime
 
 from app.models.financial_models import ChatMessage, ChatResponse, FinancialMetrics
+from app.services.snowflake_service import snowflake_service
 
 logger = logging.getLogger(__name__)
 
 class GeminiService:
     def __init__(self):
         self.api_key = os.getenv("GEMINI_API_KEY")
+        self.model = None
+        self.is_available = False
+        
+        # Verificar si Gemini está disponible
+        if not GEMINI_AVAILABLE:
+            logger.warning("⚠️ google-generativeai no disponible, usando respuestas simuladas")
+            self.is_available = False
+            return
+            
         if not self.api_key:
             logger.warning("GEMINI_API_KEY no configurada, usando modo simulado")
             self.api_key = "demo_key"
         
         try:
             genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-pro')
-            self.is_available = True
+            # Probar con modelos disponibles: gemini-2.0-flash (rápido y estable)
+            try:
+                self.model = genai.GenerativeModel('gemini-2.0-flash')
+                self.is_available = True
+                logger.info("✅ Gemini API configurada correctamente (gemini-2.0-flash)")
+            except Exception as e1:
+                logger.warning(f"gemini-2.0-flash no disponible ({e1}), intentando gemini-2.5-flash")
+                # Si no funciona, intentar con gemini-2.5-flash
+                try:
+                    self.model = genai.GenerativeModel('gemini-2.5-flash')
+                    self.is_available = True
+                    logger.info("✅ Gemini API configurada correctamente (gemini-2.5-flash)")
+                except Exception as e2:
+                    logger.warning(f"gemini-2.5-flash no disponible ({e2}), intentando gemini-2.5-pro")
+                    # Si no funciona, intentar con gemini-2.5-pro
+                    try:
+                        self.model = genai.GenerativeModel('gemini-2.5-pro')
+                        self.is_available = True
+                        logger.info("✅ Gemini API configurada correctamente (gemini-2.5-pro)")
+                    except Exception as e3:
+                        logger.error(f"Ningún modelo de Gemini disponible ({e3}), usando modo simulado")
+                        self.is_available = False
         except Exception as e:
             logger.error(f"Error al configurar Gemini: {str(e)}")
             self.is_available = False
@@ -80,40 +115,30 @@ class GeminiService:
     def _create_analysis_prompt(self, question: str, financial_context: str) -> str:
         """Crear prompt estructurado para análisis financiero"""
         return f"""
-        Eres Carlos Mendoza, Asesor Financiero Senior de Banorte con más de 15 años de experiencia especializado en PyMEs. Tu objetivo es ayudar a empresas a crecer de manera sostenible y rentable.
+        Eres Maya, Asesora Financiera de Banorte. Responde de forma CÓMIDA y NATURAL, como una conversación de chat.
 
         {financial_context}
 
-        PREGUNTA DEL CLIENTE: {question}
+        PREGUNTA: {question}
 
-        PERSONALIDAD Y ENFOQUE:
-        - Eres un experto con amplia experiencia en finanzas empresariales y productos bancarios
-        - Mantienes un tono profesional pero cercano, como un consultor de confianza
-        - Tu objetivo principal es ayudar a la empresa a crecer de manera sostenible
-        - Siempre buscas oportunidades de mejora y optimización financiera
-        - Eres proactivo en identificar riesgos y oportunidades de crecimiento
-        - Conoces profundamente los productos y servicios de Banorte para PyMEs
+        INSTRUCCIONES:
+        - Responde EN CONVERSACIÓN, NO EN FORMATO DE DOCUMENTO
+        - MÁXIMO 3-4 párrafos de 2-3 líneas cada uno
+        - Usa DATOS ESPECÍFICOS de su empresa (las cifras que ves arriba)
+        - Sé DIRECTO y CONCRETO
+        - Evita listas con bullets extensas
+        - Termina con UNA pregunta simple de seguimiento
 
-        INSTRUCCIONES ESPECÍFICAS:
-        1. Saluda profesionalmente mencionando que entiendes la situación de su empresa
-        2. Responde la pregunta específica con datos concretos y análisis profundo
-        3. Proporciona recomendaciones accionables y específicas basadas en su situación actual
-        4. Sugiere métricas clave para monitorear el progreso
-        5. Si es relevante, menciona productos o servicios de Banorte que podrían ayudar (créditos, inversiones, seguros, etc.)
-        6. Siempre termina con una pregunta que invite a profundizar en el tema o explore nuevas oportunidades
-        7. Si la pregunta no es financiera, redirige educadamente hacia temas que impacten el crecimiento empresarial
-        8. Usa un lenguaje técnico pero comprensible, como un verdadero asesor bancario
+        EJEMPLO DE TONO:
+        "Hola! Veo que tu empresa tiene un margen de 51.7%, eso es excelente. Para mejorar el flujo de caja en octubre que bajó a $507k, te recomiendo revisar políticas de cobranza..."
 
-        FORMATO DE RESPUESTA:
-        - Saludo profesional identificándote como Carlos Mendoza de Banorte
-        - Análisis de la situación actual de su empresa
-        - Respuesta específica a la pregunta con datos concretos
-        - Recomendaciones concretas y accionables
-        - Sugerencias de productos/servicios Banorte si aplica
-        - Próximos pasos sugeridos
-        - Pregunta de seguimiento para continuar la conversación
+        NO HAGAS:
+        - Listas numeradas extensas
+        - Secciones con títulos tipo "**Análisis:"** etc
+        - Mencionar que "eres Carlos Mendoza" cada vez
+        - Respuestas muy largas
 
-        Responde en español, sé específico con números y porcentajes, y mantén siempre el enfoque en el crecimiento sostenible de su empresa.
+        Responde YA como chat, natural y corto.
         """
     
     def _process_gemini_response(self, response_text: str, original_question: str) -> ChatResponse:
@@ -129,7 +154,7 @@ class GeminiService:
             visualizations = self._suggest_visualizations(original_question)
             
             return ChatResponse(
-                response=response_text,
+                content=response_text,
                 recommendations=recommendations,
                 visualizations=visualizations,
                 confidence=confidence
@@ -138,7 +163,7 @@ class GeminiService:
         except Exception as e:
             logger.error(f"Error al procesar respuesta de Gemini: {str(e)}")
             return ChatResponse(
-                response=response_text,
+                content=response_text,
                 confidence=0.7
             )
     
@@ -197,7 +222,7 @@ class GeminiService:
         
         if 'contratar' in question_lower or 'empleado' in question_lower:
             return ChatResponse(
-                response="""Basándome en tu situación financiera actual, puedo ayudarte a evaluar la viabilidad de contratar un nuevo empleado.
+                content="""Basándome en tu situación financiera actual, puedo ayudarte a evaluar la viabilidad de contratar un nuevo empleado.
 
 **Análisis de Viabilidad:**
 Para determinar si puedes contratar un nuevo empleado, necesito considerar varios factores:
@@ -225,7 +250,7 @@ Para determinar si puedes contratar un nuevo empleado, necesito considerar vario
         
         elif 'invertir' in question_lower or 'compra' in question_lower:
             return ChatResponse(
-                response="""Para evaluar una inversión, necesito analizar varios aspectos de tu situación financiera.
+                content="""Para evaluar una inversión, necesito analizar varios aspectos de tu situación financiera.
 
 **Factores a Considerar:**
 - Impacto en el flujo de caja inmediato
@@ -252,7 +277,7 @@ Para determinar si puedes contratar un nuevo empleado, necesito considerar vario
         
         else:
             return ChatResponse(
-                response="""Hola! Soy tu asesor financiero inteligente. Puedo ayudarte con:
+                content="""Hola! Soy tu asesor financiero inteligente. Puedo ayudarte con:
 
 • Análisis de viabilidad de contrataciones
 • Evaluación de inversiones y compras

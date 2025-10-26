@@ -13,7 +13,11 @@ import {
   MessageCircle,
   Zap,
   Target,
-  Calculator
+  Calculator,
+  Volume2,
+  VolumeX,
+  Play,
+  Pause
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
@@ -23,7 +27,10 @@ const Chat = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [playingAudio, setPlayingAudio] = useState(null);
   const messagesEndRef = useRef(null);
+  const audioRef = useRef(null);
 
   useEffect(() => {
     loadSuggestions();
@@ -31,7 +38,7 @@ const Chat = () => {
         setMessages([{
           id: 1,
           type: 'assistant',
-          content: '¡Buenos días! Soy Carlos Mendoza, su Asesor Financiero Senior de Banorte. He revisado la situación financiera de su empresa y estoy aquí para ayudarle a optimizar su crecimiento y rentabilidad. ¿En qué aspecto financiero le gustaría que le asesore hoy?',
+          content: '¡Hola! Soy Maya, tu Asesora Financiera de Banorte. Revisé la situación de tu empresa y puedo ayudarte con cualquier aspecto financiero. ¿En qué te gustaría que te ayude hoy?',
           timestamp: new Date(),
           confidence: 0.9
         }]);
@@ -77,10 +84,11 @@ const Chat = () => {
       const assistantMessage = {
         id: Date.now() + 1,
         type: 'assistant',
-        content: response.data.response,
+        content: response.data.content || response.data.response,
         recommendations: response.data.recommendations,
         visualizations: response.data.visualizations,
         confidence: response.data.confidence,
+        audio_data: response.data.audio_data,
         timestamp: new Date()
       };
 
@@ -118,6 +126,54 @@ const Chat = () => {
     setInputMessage(suggestion);
   };
 
+  const playAudio = async (audioData) => {
+    if (!audioEnabled || !audioData) return;
+    
+    try {
+      // Convertir base64 a blob
+      const audioBlob = new Blob([Uint8Array.from(atob(audioData.audio_data), c => c.charCodeAt(0))], {
+        type: 'audio/mpeg'
+      });
+      
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      
+      audio.onended = () => {
+        setPlayingAudio(null);
+        URL.revokeObjectURL(audioUrl);
+      };
+      
+      audio.onerror = () => {
+        setPlayingAudio(null);
+        URL.revokeObjectURL(audioUrl);
+        toast.error('Error reproduciendo audio');
+      };
+      
+      setPlayingAudio(audioUrl);
+      await audio.play();
+      
+    } catch (error) {
+      console.error('Error playing audio:', error);
+      toast.error('Error reproduciendo audio');
+      setPlayingAudio(null);
+    }
+  };
+
+  const stopAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    setPlayingAudio(null);
+  };
+
+  const toggleAudio = () => {
+    setAudioEnabled(!audioEnabled);
+    if (playingAudio) {
+      stopAudio();
+    }
+  };
+
   const formatTime = (timestamp) => {
     return new Date(timestamp).toLocaleTimeString('es-MX', {
       hour: '2-digit',
@@ -142,10 +198,23 @@ const Chat = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-              <h1 className="text-4xl font-bold text-banorte-primary font-display">Asesor Financiero Banorte</h1>
-              <p className="text-banorte-secondary mt-2 text-lg">Carlos Mendoza - Su consultor financiero personal</p>
+              <h1 className="text-4xl font-bold text-banorte-primary font-display">Asesora Financiera Banorte</h1>
+              <p className="text-banorte-secondary mt-2 text-lg">Maya - Tu asesora financiera personal</p>
         </div>
         <div className="flex items-center space-x-4">
+          {/* Botón de audio */}
+          <button
+            onClick={toggleAudio}
+            className={`p-2 rounded-lg transition-all duration-200 ${
+              audioEnabled 
+                ? 'bg-banorte-primary text-white hover:bg-banorte-primary/90' 
+                : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+            }`}
+            title={audioEnabled ? 'Desactivar audio' : 'Activar audio'}
+          >
+            {audioEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+          </button>
+          
           <div className="flex items-center space-x-2 text-sm text-banorte-primary">
             <div className="w-2 h-2 bg-banorte-success rounded-full animate-pulse"></div>
             <span>IA Activa</span>
@@ -195,7 +264,24 @@ const Chat = () => {
                               ? 'bg-banorte-danger bg-opacity-10 text-banorte-danger border border-banorte-danger'
                               : 'bg-banorte-light text-banorte-dark border border-gray-200'
                         }`}>
-                          <p className="whitespace-pre-wrap">{message.content}</p>
+                          <div className="flex items-start justify-between">
+                            <p className="whitespace-pre-wrap flex-1">{message.content}</p>
+                            
+                            {/* Botón de audio para mensajes del asistente */}
+                            {message.type === 'assistant' && message.audio_data && audioEnabled && (
+                              <button
+                                onClick={() => playAudio(message.audio_data)}
+                                className="ml-2 p-1 rounded-full bg-banorte-primary text-white hover:bg-banorte-primary/90 transition-colors"
+                                title="Reproducir audio"
+                              >
+                                {playingAudio === message.audio_data.audio_data ? (
+                                  <Pause className="h-4 w-4" />
+                                ) : (
+                                  <Play className="h-4 w-4" />
+                                )}
+                              </button>
+                            )}
+                          </div>
                           
                           {/* Recommendations */}
                           {message.recommendations && message.recommendations.length > 0 && (

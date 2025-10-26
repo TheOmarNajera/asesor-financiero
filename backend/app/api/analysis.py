@@ -2,8 +2,8 @@
 Endpoints para análisis financiero
 """
 
-from fastapi import APIRouter, HTTPException, Depends
-from typing import Dict, Any, List
+from fastapi import APIRouter, HTTPException, Depends, Header
+from typing import Dict, Any, List, Optional
 import logging
 
 from app.models.financial_models import AnalysisRequest, AnalysisResponse, FinancialMetrics
@@ -13,10 +13,11 @@ from app.services.gemini_service import GeminiService
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-def get_data_service() -> DataService:
-    """Dependency para obtener el servicio de datos"""
-    # En una implementación real, esto vendría del contexto de la app
-    return DataService()
+def get_data_service(empresa_id: Optional[str] = Header(None, alias="X-Empresa-ID")) -> DataService:
+    """Dependency para obtener el servicio de datos con empresa_id del header"""
+    # Si no hay empresa_id en header, usar default
+    empresa = empresa_id or "E001"
+    return DataService(empresa_id=empresa)
 
 def get_gemini_service() -> GeminiService:
     """Dependency para obtener el servicio de Gemini"""
@@ -29,6 +30,10 @@ async def analyze_cashflow(
 ) -> Dict[str, Any]:
     """Analizar flujo de caja"""
     try:
+        # Cargar datos si no están disponibles
+        if not data_service.cash_flow_history:
+            await data_service.load_financial_data()
+        
         if not data_service.cash_flow_history:
             raise HTTPException(status_code=404, detail="No hay datos de flujo de caja disponibles")
         
@@ -171,6 +176,10 @@ async def analyze_profitability(
 ) -> Dict[str, Any]:
     """Analizar rentabilidad general"""
     try:
+        # Cargar datos si no están disponibles
+        if not data_service.metrics:
+            await data_service.load_financial_data()
+        
         if not data_service.metrics:
             raise HTTPException(status_code=404, detail="No hay métricas disponibles")
         

@@ -72,8 +72,8 @@ const Layout = ({ children, onLogout, user }) => {
                       <Building2 className="h-5 w-5 text-white" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-banorte-primary">{user.companyName}</p>
-                      <p className="text-xs text-banorte-accent">{user.email}</p>
+                      <p className="text-sm font-medium text-banorte-primary">Empresa: {user.empresa_id || user.id}</p>
+                      <p className="text-xs text-banorte-accent">Sesión activa</p>
                     </div>
                   </div>
                   <button

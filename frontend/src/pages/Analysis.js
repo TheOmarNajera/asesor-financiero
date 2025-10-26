@@ -203,7 +203,7 @@ const Analysis = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Ingresos Totales</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-xl font-bold text-gray-900">
                 {formatCurrency(analysisData.profitability?.total_revenue || 0)}
               </p>
             </div>
@@ -220,7 +220,7 @@ const Analysis = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Gastos Totales</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-xl font-bold text-gray-900">
                 {formatCurrency(analysisData.profitability?.total_expenses || 0)}
               </p>
             </div>
@@ -237,7 +237,7 @@ const Analysis = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Ganancia Neta</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-xl font-bold text-gray-900">
                 {formatCurrency(analysisData.profitability?.net_profit || 0)}
               </p>
             </div>
@@ -254,7 +254,7 @@ const Analysis = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Margen de Ganancia</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-xl font-bold text-gray-900">
                 {formatPercentage(analysisData.profitability?.profit_margin || 0)}
               </p>
             </div>

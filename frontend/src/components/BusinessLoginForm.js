@@ -1,13 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Lock, 
-  User, 
-  Eye, 
-  EyeOff, 
   Building2, 
   AlertCircle,
-  CheckCircle,
   Loader2,
   ArrowRight
 } from 'lucide-react';
@@ -16,13 +11,9 @@ import BanorteLogo from './BanorteLogo';
 
 const BusinessLoginForm = ({ onLogin }) => {
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    companyName: ''
+    empresa_id: ''
   });
-  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,56 +23,27 @@ const BusinessLoginForm = ({ onLogin }) => {
       // Simular autenticación empresarial
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Validar credenciales empresariales
-      if (formData.email === 'empresa@demo.com' && formData.password === 'empresa123') {
+      // Validar que se ingresó empresa_id
+      if (formData.empresa_id && formData.empresa_id.trim() !== '') {
         const user = {
-          id: 'emp_1',
-          email: formData.email,
-          companyName: formData.companyName || 'Empresa Demo',
-          name: 'Usuario Empresarial',
+          id: formData.empresa_id.trim(),
+          empresa_id: formData.empresa_id.trim(),
+          name: `Usuario ${formData.empresa_id.trim()}`,
           role: 'business',
-          token: 'jwt_business_token_here'
+          token: `jwt_business_token_${formData.empresa_id.trim()}`
         };
         
         localStorage.setItem('business_user', JSON.stringify(user));
         localStorage.setItem('business_token', user.token);
+        localStorage.setItem('empresa_id', formData.empresa_id.trim());
         
-        toast.success('¡Bienvenido al Asesor PyME!');
+        toast.success(`¡Bienvenido! Empresa: ${formData.empresa_id.trim()}`);
         onLogin(user);
       } else {
-        toast.error('Credenciales incorrectas');
+        toast.error('Por favor ingresa el ID de empresa');
       }
     } catch (error) {
       toast.error('Error al iniciar sesión');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      // Simular registro empresarial
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const user = {
-        id: `emp_${Date.now()}`,
-        email: formData.email,
-        companyName: formData.companyName,
-        name: 'Usuario Empresarial',
-        role: 'business',
-        token: 'jwt_business_token_here'
-      };
-      
-      localStorage.setItem('business_user', JSON.stringify(user));
-      localStorage.setItem('business_token', user.token);
-      
-      toast.success('¡Empresa registrada exitosamente!');
-      onLogin(user);
-    } catch (error) {
-      toast.error('Error al registrar empresa');
     } finally {
       setIsLoading(false);
     }
@@ -104,7 +66,7 @@ const BusinessLoginForm = ({ onLogin }) => {
             Asesor PyME Inteligente
           </h2>
           <p className="mt-2 text-sm text-banorte-accent">
-            {isRegistering ? 'Registra tu empresa' : 'Acceso empresarial'}
+            Acceso empresarial
           </p>
         </div>
 
@@ -114,84 +76,29 @@ const BusinessLoginForm = ({ onLogin }) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          onSubmit={isRegistering ? handleRegister : handleSubmit}
+          onSubmit={handleSubmit}
         >
           <div className="card">
             <div className="space-y-6">
-              {/* Nombre de la empresa */}
+              {/* ID de Empresa */}
               <div>
-                <label htmlFor="companyName" className="block text-sm font-medium text-banorte-dark mb-2">
-                  Nombre de la Empresa
+                <label htmlFor="empresa_id" className="block text-sm font-medium text-banorte-dark mb-2">
+                  ID de Empresa
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Building2 className="h-5 w-5 text-banorte-accent" />
                   </div>
                   <input
-                    id="companyName"
-                    name="companyName"
+                    id="empresa_id"
+                    name="empresa_id"
                     type="text"
                     required
-                    value={formData.companyName}
+                    value={formData.empresa_id}
                     onChange={handleInputChange}
                     className="input-field pl-10"
-                    placeholder="Mi Empresa S.A. de C.V."
+                    placeholder="E001, E002, E003..."
                   />
-                </div>
-              </div>
-
-              {/* Email */}
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-banorte-dark mb-2">
-                  Correo Electrónico
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-5 w-5 text-banorte-accent" />
-                  </div>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="input-field pl-10"
-                    placeholder="contacto@miempresa.com"
-                  />
-                </div>
-              </div>
-
-              {/* Password */}
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-banorte-dark mb-2">
-                  Contraseña
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-banorte-accent" />
-                  </div>
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    className="input-field pl-10 pr-10"
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-banorte-accent" />
-                    ) : (
-                      <Eye className="h-5 w-5 text-banorte-accent" />
-                    )}
-                  </button>
                 </div>
               </div>
 
@@ -205,42 +112,26 @@ const BusinessLoginForm = ({ onLogin }) => {
                   {isLoading ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>{isRegistering ? 'Registrando...' : 'Iniciando sesión...'}</span>
+                      <span>Iniciando sesión...</span>
                     </>
                   ) : (
                     <>
                       <ArrowRight className="h-4 w-4" />
-                      <span>{isRegistering ? 'Registrar Empresa' : 'Acceder'}</span>
+                      <span>Acceder</span>
                     </>
                   )}
-                </button>
-              </div>
-
-              {/* Cambiar entre login y registro */}
-              <div className="text-center">
-                <button
-                  type="button"
-                  onClick={() => setIsRegistering(!isRegistering)}
-                  className="text-sm text-banorte-primary hover:text-banorte-secondary transition-colors duration-200"
-                >
-                  {isRegistering 
-                    ? '¿Ya tienes cuenta? Inicia sesión' 
-                    : '¿Nueva empresa? Regístrate aquí'
-                  }
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Credenciales de prueba */}
+          {/* ID de empresa disponible */}
           <div className="bg-banorte-light p-4 rounded-lg border border-banorte-primary border-opacity-20">
             <div className="flex items-start space-x-3">
               <AlertCircle className="h-5 w-5 text-banorte-primary mt-0.5 flex-shrink-0" />
               <div className="text-sm">
-                <p className="font-medium text-banorte-primary mb-1">Credenciales de prueba:</p>
-                <p className="text-banorte-dark">Email: empresa@demo.com</p>
-                <p className="text-banorte-dark">Contraseña: empresa123</p>
-                <p className="text-banorte-dark">Empresa: Empresa Demo</p>
+                <p className="font-medium text-banorte-primary mb-1">IDs de empresa disponibles:</p>
+                <p className="text-banorte-dark">E001, E002, E003, etc.</p>
               </div>
             </div>
           </div>
