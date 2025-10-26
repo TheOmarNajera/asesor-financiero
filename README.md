@@ -230,12 +230,23 @@ python migrate_to_snowflake.py
 ELEVENLABS_API_KEY=your_api_key
 ```
 
-### Despliegue en Azure
+### Despliegue en Azure (Arquitectura Arm)
+
+#### Deployment Automático (Recomendado)
+```bash
+# 1. Configurar GitHub Secrets (ver azure/README.md)
+# 2. Hacer push a main
+# 3. El deployment se ejecuta automáticamente
+```
+
+#### Deployment Manual
 ```bash
 # Usar script de despliegue
 chmod +x azure/deploy.sh
 ./azure/deploy.sh
 ```
+
+**Ver [azure/README.md](azure/README.md) para instrucciones completas de deployment.**
 
 ## 📊 API Endpoints
 

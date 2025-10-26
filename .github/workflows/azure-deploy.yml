@@ -1,0 +1,197 @@
+name: Deploy to Azure VM (Arm)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: asesor-pyme-vm
+  AZURE_RESOURCE_GROUP: asesor-pyme-rg
+  AZURE_LOCATION: eastus
+  AZURE_VM_NAME: asesor-pyme-vm
+  AZURE_VM_SIZE: Standard_D2ps_v5
+  AZURE_ADMIN_USERNAME: azureuser
+
+jobs:
+  deploy:
+    name: Deploy to Azure VM
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'
+    
+    - name: Install Azure CLI
+      run: |
+        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+        az version
+    
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Create Resource Group
+      if: github.ref == 'refs/heads/main'
+      run: |
+        az group create --name ${{ env.AZURE_RESOURCE_GROUP }} \
+          --location ${{ env.AZURE_LOCATION }} \
+          --output table
+    
+    - name: Check if VM exists
+      id: check-vm
+      run: |
+        VM_EXISTS=$(az vm list --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+          --query "[?name=='${{ env.AZURE_VM_NAME }}']" -o tsv || echo "")
+        if [ -z "$VM_EXISTS" ]; then
+          echo "exists=false" >> $GITHUB_OUTPUT
+        else
+          echo "exists=true" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Create VM if not exists
+      if: steps.check-vm.outputs.exists == 'false'
+      run: |
+        echo "Creating new VM with Arm architecture..."
+        az vm create \
+          --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+          --name ${{ env.AZURE_VM_NAME }} \
+          --image "Ubuntu2204" \
+          --size ${{ env.AZURE_VM_SIZE }} \
+          --admin-username ${{ env.AZURE_ADMIN_USERNAME }} \
+          --generate-ssh-keys \
+          --public-ip-sku Standard \
+          --location ${{ env.AZURE_LOCATION }} \
+          --output table
+        
+        # Open required ports
+        az vm open-port --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+          --name ${{ env.AZURE_VM_NAME }} --port 80 --priority 1000
+        az vm open-port --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+          --name ${{ env.AZURE_VM_NAME }} --port 443 --priority 1001
+        az vm open-port --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+          --name ${{ env.AZURE_VM_NAME }} --port 8000 --priority 1002
+    
+    - name: Get VM IP
+      id: vm-ip
+      run: |
+        VM_IP=$(az vm show --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+          --name ${{ env.AZURE_VM_NAME }} \
+          --show-details \
+          --query publicIps \
+          --output tsv)
+        echo "IP=$VM_IP" >> $GITHUB_OUTPUT
+        echo "VM IP: $VM_IP"
+    
+    - name: Setup SSH Key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.AZURE_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan ${{ steps.vm-ip.outputs.IP }} >> ~/.ssh/known_hosts
+    
+    - name: Install dependencies on VM
+      run: |
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
+          ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} << 'EOF'
+        # Update system
+        sudo apt-get update && sudo apt-get upgrade -y
+        
+        # Install Docker if not installed
+        if ! command -v docker &> /dev/null; then
+          curl -fsSL https://get.docker.com -o get-docker.sh
+          sudo sh get-docker.sh
+          sudo usermod -aG docker $USER
+          rm get-docker.sh
+        fi
+        
+        # Install Docker Compose if not installed
+        if ! command -v docker-compose &> /dev/null; then
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" \
+            -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+        fi
+        
+        # Install Git if not installed
+        if ! command -v git &> /dev/null; then
+          sudo apt-get install -y git
+        fi
+        
+        echo "✅ Dependencies installed"
+EOF
+    
+    - name: Deploy application to VM
+      run: |
+        # Create app directory
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
+          ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} \
+          "mkdir -p ~/asesor-pyme && cd ~/asesor-pyme && git clone https://github.com/${{ github.repository }} . || git pull"
+        
+        # Copy environment variables
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
+          ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} << 'EOF'
+        cd ~/asesor-pyme
+        
+        # Create .env file if it doesn't exist
+        if [ ! -f .env ]; then
+          cp env.example .env
+        fi
+        
+        # Update .env with GitHub Secrets
+        cat > .env << ENVEOF
+        # Auto-generated on deployment
+        HOST=0.0.0.0
+        PORT=8000
+        DEBUG=False
+        DEFAULT_EMPRESA_ID=E001
+        USE_SAMPLE_DATA=true
+        SKIP_EXCEL_LOADING=true
+        SNOWFLAKE_ACCOUNT=${{ secrets.SNOWFLAKE_ACCOUNT }}
+        SNOWFLAKE_USER=${{ secrets.SNOWFLAKE_USER }}
+        SNOWFLAKE_PASSWORD=${{ secrets.SNOWFLAKE_PASSWORD }}
+        SNOWFLAKE_WAREHOUSE=COMPUTE_WH
+        SNOWFLAKE_DATABASE=PYME_FINANCIAL
+        SNOWFLAKE_SCHEMA=PUBLIC
+        GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+        ELEVENLABS_API_KEY=${{ secrets.ELEVENLABS_API_KEY }}
+ENVEOF
+EOF
+        
+        # Deploy with Docker Compose
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
+          ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} \
+          "cd ~/asesor-pyme && docker-compose down && docker-compose build && docker-compose up -d"
+        
+        # Wait for services
+        sleep 30
+        
+        # Check service status
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
+          ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} \
+          "cd ~/asesor-pyme && docker-compose ps"
+    
+    - name: Health Check
+      run: |
+        echo "🌐 Application URL: http://${{ steps.vm-ip.outputs.IP }}"
+        echo "📊 API URL: http://${{ steps.vm-ip.outputs.IP }}/api"
+        
+        # Simple health check
+        curl -f http://${{ steps.vm-ip.outputs.IP }}/health || echo "⚠️ Health check failed, but deployment may still be in progress"
+    
+    - name: Deployment Summary
+      if: always()
+      run: |
+        echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **VM IP**: ${{ steps.vm-ip.outputs.IP }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Architecture**: Arm (${{ env.AZURE_VM_SIZE }})" >> $GITHUB_STEP_SUMMARY
+        echo "- **Application**: http://${{ steps.vm-ip.outputs.IP }}" >> $GITHUB_STEP_SUMMARY
+

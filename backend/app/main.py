@@ -64,7 +64,14 @@ app = FastAPI(
 # Configurar CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:8080", "http://172.20.10.10:3000", "http://172.20.10.10"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:8080",
+        "https://poweredbymaya.tech",
+        "https://www.poweredbymaya.tech",
+        "http://poweredbymaya.tech",
+        "http://www.poweredbymaya.tech"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
