@@ -136,7 +136,7 @@ EOF
         
         # Copy environment variables
         ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
-          ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} << 'EOF'
+          ${{ env.AZURE_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} <<'HEREDOC'
         cd ~/asesor-pyme
         
         # Create .env file if it doesn't exist
@@ -145,24 +145,23 @@ EOF
         fi
         
         # Update .env with GitHub Secrets
-        cat > .env << ENVEOF
-        # Auto-generated on deployment
-        HOST=0.0.0.0
-        PORT=8000
-        DEBUG=False
-        DEFAULT_EMPRESA_ID=E001
-        USE_SAMPLE_DATA=true
-        SKIP_EXCEL_LOADING=true
-        SNOWFLAKE_ACCOUNT=${{ secrets.SNOWFLAKE_ACCOUNT }}
-        SNOWFLAKE_USER=${{ secrets.SNOWFLAKE_USER }}
-        SNOWFLAKE_PASSWORD=${{ secrets.SNOWFLAKE_PASSWORD }}
-        SNOWFLAKE_WAREHOUSE=COMPUTE_WH
-        SNOWFLAKE_DATABASE=PYME_FINANCIAL
-        SNOWFLAKE_SCHEMA=PUBLIC
-        GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-        ELEVENLABS_API_KEY=${{ secrets.ELEVENLABS_API_KEY }}
+        cat > .env <<ENVEOF
+HOST=0.0.0.0
+PORT=8000
+DEBUG=False
+DEFAULT_EMPRESA_ID=E001
+USE_SAMPLE_DATA=true
+SKIP_EXCEL_LOADING=true
+SNOWFLAKE_ACCOUNT=${{ secrets.SNOWFLAKE_ACCOUNT }}
+SNOWFLAKE_USER=${{ secrets.SNOWFLAKE_USER }}
+SNOWFLAKE_PASSWORD=${{ secrets.SNOWFLAKE_PASSWORD }}
+SNOWFLAKE_WAREHOUSE=COMPUTE_WH
+SNOWFLAKE_DATABASE=PYME_FINANCIAL
+SNOWFLAKE_SCHEMA=PUBLIC
+GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+ELEVENLABS_API_KEY=${{ secrets.ELEVENLABS_API_KEY }}
 ENVEOF
-EOF
+HEREDOC
         
         # Deploy with Docker Compose
         ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
