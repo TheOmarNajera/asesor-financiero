@@ -34,6 +34,17 @@ jobs:
       run: |
         gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
     
+    - name: Enable required APIs
+      run: |
+        echo "Enabling Compute Engine API..."
+        gcloud services enable compute.googleapis.com
+        
+        echo "Enabling IAM API..."
+        gcloud services enable iam.googleapis.com
+        
+        echo "Waiting for APIs to be fully enabled..."
+        sleep 30
+    
     - name: Check if VM exists
       id: check-vm
       run: |

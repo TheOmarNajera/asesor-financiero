@@ -41,12 +41,16 @@ gcloud projects add-iam-policy-binding asesor-pyme-2025 \
   --member="serviceAccount:github-actions@asesor-pyme-2025.iam.gserviceaccount.com" \
   --role="roles/iam.serviceAccountUser"
 
+gcloud projects add-iam-policy-binding asesor-pyme-2025 \
+  --member="serviceAccount:github-actions@asesor-pyme-2025.iam.gserviceaccount.com" \
+  --role="roles/serviceusage.serviceUsageAdmin"
+
 # Crear clave JSON
 gcloud iam service-accounts keys create key.json \
   --iam-account=github-actions@asesor-pyme-2025.iam.gserviceaccount.com
 
 # Leer clave JSON desde cloud shell
-gcloud
+cat key.json
 ```
 
 ### 3. Habilitar APIs Necesarias
