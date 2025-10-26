@@ -66,9 +66,11 @@ jobs:
         cat > /tmp/startup-script.sh << 'SCRIPT'
         #!/bin/bash
         sudo apt-get update
-        sudo apt-get install -y docker.io docker-compose-plugin git curl
+        sudo apt-get install -y docker.io git curl
         sudo systemctl start docker
         sudo systemctl enable docker
+        sudo curl -L https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-linux-aarch64 -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
         sudo usermod -aG docker gcpuser
         SCRIPT
         
@@ -141,11 +143,16 @@ jobs:
         
         ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
           ${{ env.GCP_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} \
-          "sudo apt-get install -y docker.io docker-compose-plugin git"
+          "sudo apt-get install -y docker.io git curl"
         
         ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
           ${{ env.GCP_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} \
           "sudo systemctl start docker && sudo systemctl enable docker"
+        
+        echo "Installing Docker Compose..."
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
+          ${{ env.GCP_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} \
+          "sudo curl -L 'https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-linux-aarch64' -o /usr/local/bin/docker-compose && sudo chmod +x /usr/local/bin/docker-compose"
         
         ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
           ${{ env.GCP_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} \
@@ -192,7 +199,7 @@ jobs:
       run: |
         ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
           ${{ env.GCP_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} \
-          "cd ~/asesor-pyme && docker compose down && docker compose build && docker compose up -d"
+          "cd ~/asesor-pyme && docker-compose down && docker-compose build && docker-compose up -d"
         
         # Wait for services
         sleep 30
@@ -200,7 +207,7 @@ jobs:
         # Check service status
         ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
           ${{ env.GCP_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} \
-          "cd ~/asesor-pyme && docker compose ps"
+          "cd ~/asesor-pyme && docker-compose ps"
     
     - name: Health Check
       run: |
