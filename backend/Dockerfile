@@ -7,18 +7,18 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Establecer directorio de trabajo
-WORKDIR /app
-
 # Copiar requirements y instalar dependencias Python
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Copiar código de la aplicación
-COPY . .
+COPY app /app/app
 
 # Crear directorio para datos
 RUN mkdir -p /app/data
+
+# Establecer directorio de trabajo
+WORKDIR /app
 
 # Exponer puerto
 EXPOSE 8000
