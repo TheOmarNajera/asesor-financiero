@@ -2,7 +2,7 @@
 
 ## 🎯 Resumen Rápido
 
-Este proyecto tiene **deployment automático** a Azure VM con arquitectura Arm cada vez que haces push a `main`.
+Este proyecto tiene **deployment automático** a GCP (Google Cloud Platform) VM con arquitectura Arm cada vez que haces push a `main`.
 
 ## ⚡ Setup Inicial (Una vez)
 

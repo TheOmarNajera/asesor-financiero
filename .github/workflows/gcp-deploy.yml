@@ -1,0 +1,204 @@
+name: Deploy to GCP VM (Arm)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GCP_ZONE: europe-west1-c
+  GCP_VM_NAME: asesor-pyme-vm
+  GCP_VM_MACHINE_TYPE: t2a-standard-2  # ARM architecture
+  GCP_ADMIN_USERNAME: gcpuser
+
+jobs:
+  deploy:
+    name: Deploy to GCP VM
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+    
+    - name: Install gcloud CLI
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y apt-transport-https ca-certificates gnupg
+    
+    - name: Authenticate to GCP
+      run: |
+        echo "${{ secrets.GCP_SA_KEY }}" | gcloud auth activate-service-account --key-file=-
+        gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
+    
+    - name: Check if VM exists
+      id: check-vm
+      run: |
+        VM_EXISTS=$(gcloud compute instances list \
+          --filter="name:${{ env.GCP_VM_NAME }}" \
+          --format="value(name)" || echo "")
+        if [ -z "$VM_EXISTS" ]; then
+          echo "exists=false" >> $GITHUB_OUTPUT
+        else
+          echo "exists=true" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Create VM if not exists
+      if: steps.check-vm.outputs.exists == 'false'
+      run: |
+        echo "Creating new VM with Arm architecture (t2a)..."
+        
+        # Create VM with ARM architecture
+        gcloud compute instances create ${{ env.GCP_VM_NAME }} \
+          --zone=${{ env.GCP_ZONE }} \
+          --machine-type=${{ env.GCP_VM_MACHINE_TYPE }} \
+          --image-family=ubuntu-2204-lts-arm64 \
+          --image-project=ubuntu-os-cloud \
+          --boot-disk-size=20GB \
+          --boot-disk-type=pd-standard \
+          --tags=http-server,https-server \
+          --metadata=startup-script='#!/bin/bash
+        sudo apt-get update
+        sudo apt-get install -y docker.io docker-compose-plugin git
+        sudo systemctl start docker
+        sudo systemctl enable docker
+        sudo usermod -aG docker gcpuser
+        '
+        
+        # Create firewall rules
+        gcloud compute firewall-rules create allow-http \
+          --allow tcp:80 \
+          --source-ranges 0.0.0.0/0 \
+          --target-tags http-server || true
+        
+        gcloud compute firewall-rules create allow-https \
+          --allow tcp:443 \
+          --source-ranges 0.0.0.0/0 \
+          --target-tags https-server || true
+        
+        gcloud compute firewall-rules create allow-8000 \
+          --allow tcp:8000 \
+          --source-ranges 0.0.0.0/0 \
+          --target-tags http-server || true
+    
+    - name: Get VM IP
+      id: vm-ip
+      run: |
+        VM_IP=$(gcloud compute instances describe ${{ env.GCP_VM_NAME }} \
+          --zone=${{ env.GCP_ZONE }} \
+          --format="value(networkInterfaces[0].accessConfigs[0].natIP)" || echo "")
+        echo "IP=$VM_IP" >> $GITHUB_OUTPUT
+        echo "VM IP: $VM_IP"
+    
+    - name: Generate SSH key
+      run: |
+        ssh-keygen -t rsa -b 4096 -f ~/.ssh/gcp_key -N ""
+        chmod 600 ~/.ssh/gcp_key
+        chmod 644 ~/.ssh/gcp_key.pub
+    
+    - name: Add SSH key to VM
+      run: |
+        # Add public key to VM
+        gcloud compute instances add-metadata ${{ env.GCP_VM_NAME }} \
+          --zone=${{ env.GCP_ZONE }} \
+          --metadata-from-file ssh-keys=<(echo "gcpuser:$(cat ~/.ssh/gcp_key.pub)")
+        
+        # Store private key
+        cp ~/.ssh/gcp_key ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+    
+    - name: Wait for VM to be ready
+      run: |
+        echo "Waiting for VM to be ready..."
+        sleep 60
+        ssh-keygen -R ${{ steps.vm-ip.outputs.IP }} || true
+        ssh-keyscan ${{ steps.vm-ip.outputs.IP }} >> ~/.ssh/known_hosts 2>/dev/null
+    
+    - name: Install dependencies on VM
+      run: |
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
+          ${{ env.GCP_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} \
+          "sudo apt-get update && sudo apt-get upgrade -y"
+        
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
+          ${{ env.GCP_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} \
+          "sudo usermod -aG docker \$USER && newgrp docker || true"
+    
+    - name: Deploy application to VM
+      run: |
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
+          ${{ env.GCP_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} \
+          "mkdir -p ~/asesor-pyme && cd ~/asesor-pyme && git clone https://github.com/${{ github.repository }} . || git pull"
+    
+    - name: Create .env file on VM
+      run: |
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
+          ${{ env.GCP_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} \
+          "cd ~/asesor-pyme && \
+           echo 'HOST=0.0.0.0' > .env && \
+           echo 'PORT=8000' >> .env && \
+           echo 'DEBUG=False' >> .env && \
+           echo 'DEFAULT_EMPRESA_ID=E001' >> .env && \
+           echo 'USE_SAMPLE_DATA=true' >> .env && \
+           echo 'SKIP_EXCEL_LOADING=true' >> .env && \
+           echo 'SNOWFLAKE_ACCOUNT=${{ secrets.SNOWFLAKE_ACCOUNT }}' >> .env && \
+           echo 'SNOWFLAKE_USER=${{ secrets.SNOWFLAKE_USER }}' >> .env && \
+           echo 'SNOWFLAKE_PASSWORD=${{ secrets.SNOWFLAKE_PASSWORD }}' >> .env && \
+           echo 'SNOWFLAKE_WAREHOUSE=COMPUTE_WH' >> .env && \
+           echo 'SNOWFLAKE_DATABASE=PYME_FINANCIAL' >> .env && \
+           echo 'SNOWFLAKE_SCHEMA=PUBLIC' >> .env && \
+           echo 'GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}' >> .env && \
+           echo 'ELEVENLABS_API_KEY=${{ secrets.ELEVENLABS_API_KEY }}' >> .env"
+    
+    - name: Create SSL certificates
+      run: |
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
+          ${{ env.GCP_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} \
+          "cd ~/asesor-pyme && mkdir -p ssl && \
+           openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+           -keyout ssl/key.pem -out ssl/cert.pem \
+           -subj '/CN=localhost'"
+    
+    - name: Deploy with Docker Compose
+      run: |
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
+          ${{ env.GCP_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} \
+          "cd ~/asesor-pyme && docker compose down && docker compose build && docker compose up -d"
+        
+        # Wait for services
+        sleep 30
+        
+        # Check service status
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
+          ${{ env.GCP_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} \
+          "cd ~/asesor-pyme && docker compose ps"
+    
+    - name: Health Check
+      run: |
+        echo "🌐 Application URL: http://${{ steps.vm-ip.outputs.IP }}"
+        echo "🌐 Application URL (HTTPS): https://${{ steps.vm-ip.outputs.IP }}"
+        echo "📊 API URL: https://${{ steps.vm-ip.outputs.IP }}/api"
+        
+        # Simple health check with SSL
+        curl -k -f https://${{ steps.vm-ip.outputs.IP }}/health || echo "⚠️ Health check failed, but deployment may still be in progress"
+    
+    - name: Deployment Summary
+      if: always()
+      run: |
+        echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **VM IP**: ${{ steps.vm-ip.outputs.IP }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Architecture**: Arm (t2a-standard-2)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Cloud Provider**: Google Cloud Platform" >> $GITHUB_STEP_SUMMARY
+        echo "- **Application (HTTP)**: http://${{ steps.vm-ip.outputs.IP }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Application (HTTPS)**: https://${{ steps.vm-ip.outputs.IP }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Domain**: https://poweredbymaya.tech" >> $GITHUB_STEP_SUMMARY
+

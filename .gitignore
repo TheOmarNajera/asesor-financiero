@@ -95,3 +95,7 @@ RESPUESTAS_PITCH.md
 DOMAIN_STRATEGY.md
 ultra_fast_server.py
 update_snowflake_config.py
+
+azure/
+
+.github/workflows/azure-deploy.yml
