@@ -15,10 +15,10 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copiar código de la aplicación
-COPY . .
+COPY app ./app
 
 # Crear directorio para datos
-RUN mkdir -p data
+RUN mkdir -p /app/data
 
 # Exponer puerto
 EXPOSE 8000

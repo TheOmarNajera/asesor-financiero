@@ -16,11 +16,11 @@ COPY . .
 # Construir aplicación
 RUN npm run build
 
-# Instalar servidor estático
-RUN npm install -g serve
+# Instalar servidor HTTP
+RUN npm install -g http-server
 
 # Exponer puerto
 EXPOSE 3000
 
 # Comando para servir la aplicación
-CMD ["serve", "-s", "build", "-l", "3000"]
+CMD ["http-server", "build", "-p", "3000", "-a", "0.0.0.0"]

@@ -22,7 +22,8 @@ services:
       - USE_SAMPLE_DATA=${USE_SAMPLE_DATA:-true}
       - DEFAULT_EMPRESA_ID=${DEFAULT_EMPRESA_ID:-E001}
     volumes:
-      - ./data:/app/data
+      - ../data:/app/data
+      - .:/app
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
