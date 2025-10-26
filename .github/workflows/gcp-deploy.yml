@@ -62,6 +62,16 @@ jobs:
       run: |
         echo "Creating new VM with Arm architecture (t2a)..."
         
+        # Create startup script
+        cat > /tmp/startup-script.sh << 'SCRIPT'
+        #!/bin/bash
+        sudo apt-get update
+        sudo apt-get install -y docker.io docker-compose-plugin git curl
+        sudo systemctl start docker
+        sudo systemctl enable docker
+        sudo usermod -aG docker gcpuser
+        SCRIPT
+        
         # Create VM with ARM architecture
         gcloud compute instances create ${{ env.GCP_VM_NAME }} \
           --zone=${{ env.GCP_ZONE }} \
@@ -71,13 +81,7 @@ jobs:
           --boot-disk-size=20GB \
           --boot-disk-type=pd-standard \
           --tags=http-server,https-server \
-          --metadata=startup-script='#!/bin/bash
-        sudo apt-get update
-        sudo apt-get install -y docker.io docker-compose-plugin git
-        sudo systemctl start docker
-        sudo systemctl enable docker
-        sudo usermod -aG docker gcpuser
-        '
+          --metadata-from-file=startup-script=/tmp/startup-script.sh
         
         # Create firewall rules
         gcloud compute firewall-rules create allow-http \
@@ -130,13 +134,24 @@ jobs:
     
     - name: Install dependencies on VM
       run: |
+        echo "Installing Docker..."
         ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
           ${{ env.GCP_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} \
-          "sudo apt-get update && sudo apt-get upgrade -y"
+          "sudo apt-get update"
         
         ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
           ${{ env.GCP_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} \
-          "sudo usermod -aG docker \$USER && newgrp docker || true"
+          "sudo apt-get install -y docker.io docker-compose-plugin git"
+        
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
+          ${{ env.GCP_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} \
+          "sudo systemctl start docker && sudo systemctl enable docker"
+        
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
+          ${{ env.GCP_ADMIN_USERNAME }}@${{ steps.vm-ip.outputs.IP }} \
+          "sudo usermod -aG docker \$USER"
+        
+        echo "✅ Dependencies installed"
     
     - name: Deploy application to VM
       run: |
