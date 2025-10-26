@@ -9,7 +9,7 @@ on:
 env:
   AZURE_WEBAPP_NAME: asesor-pyme-vm
   AZURE_RESOURCE_GROUP: asesor-pyme-rg
-  AZURE_LOCATION: eastus
+  AZURE_LOCATION: westeurope
   AZURE_VM_NAME: asesor-pyme-vm
   AZURE_VM_SIZE: Standard_D2ps_v5
   AZURE_ADMIN_USERNAME: azureuser
