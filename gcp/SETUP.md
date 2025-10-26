@@ -102,7 +102,7 @@ Si necesitas crear la VM manualmente:
 ```bash
 # Crear VM con ARM
 gcloud compute instances create asesor-pyme-vm \
-  --zone=europe-west1-c \
+  --zone=us-central1-a \
   --machine-type=t2a-standard-2 \
   --image-family=ubuntu-2204-lts-arm64 \
   --image-project=ubuntu-os-cloud \
@@ -134,7 +134,7 @@ Una vez tengas la IP de la VM:
 ```bash
 # Obtener IP
 gcloud compute instances describe asesor-pyme-vm \
-  --zone=europe-west1-c \
+  --zone=us-central1-a \
   --format="value(networkInterfaces[0].accessConfigs[0].natIP)"
 ```
 
@@ -146,7 +146,7 @@ gcloud compute instances describe asesor-pyme-vm \
 2. Después del primer deployment, configurar SSL:
 ```bash
 # Conectarse a la VM
-gcloud compute ssh asesor-pyme-vm --zone=europe-west1-c
+gcloud compute ssh asesor-pyme-vm --zone=us-central1-a
 
 # Configurar SSL
 cd ~/asesor-pyme
@@ -168,14 +168,14 @@ Los primeros $300 son gratis (trial).
 ```bash
 # Obtener IP de la VM
 VM_IP=$(gcloud compute instances describe asesor-pyme-vm \
-  --zone=europe-west1-c \
+  --zone=us-central1-a \
   --format="value(networkInterfaces[0].accessConfigs[0].natIP)")
 
 # Health check
 curl -k https://$VM_IP/health
 
 # Ver logs
-gcloud compute ssh asesor-pyme-vm --zone=europe-west1-c \
+gcloud compute ssh asesor-pyme-vm --zone=us-central1-a \
   --command="cd ~/asesor-pyme && docker compose logs -f"
 ```
 
@@ -185,11 +185,11 @@ gcloud compute ssh asesor-pyme-vm --zone=europe-west1-c \
 ```bash
 # Ver estado de la VM
 gcloud compute instances describe asesor-pyme-vm \
-  --zone=europe-west1-c \
+  --zone=us-central1-a \
   --format="value(status)"
 
 # Reiniciar
-gcloud compute instances reset asesor-pyme-vm --zone=europe-west1-c
+gcloud compute instances reset asesor-pyme-vm --zone=us-central1-a
 ```
 
 ### Ver logs de deployment
@@ -198,7 +198,7 @@ GitHub → Actions → Selecciona el workflow fallido
 ### Limpiar recursos
 ```bash
 # Eliminar VM
-gcloud compute instances delete asesor-pyme-vm --zone=europe-west1-c
+gcloud compute instances delete asesor-pyme-vm --zone=us-central1-a
 
 # Eliminar firewall rules
 gcloud compute firewall-rules delete allow-http allow-https allow-8000

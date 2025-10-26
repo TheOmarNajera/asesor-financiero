@@ -8,7 +8,7 @@ on:
 
 env:
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  GCP_ZONE: europe-west1-c
+  GCP_ZONE: us-central1-a  # Zone que soporta t2a machines
   GCP_VM_NAME: asesor-pyme-vm
   GCP_VM_MACHINE_TYPE: t2a-standard-2  # ARM architecture
   GCP_ADMIN_USERNAME: gcpuser
